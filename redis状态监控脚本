@@ -1,0 +1,5 @@
+#!/bin/bash
+PORT=$1
+STATUS=$2
+IP=`ifconfig eth0|awk -F "[ :]+" 'NR==2 {print $4}'`
+/usr/local/bin/redis-cli -h $IP -p $1 info|grep $2|awk -F ':' 'NR==1{print $2}'
