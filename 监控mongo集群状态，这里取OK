@@ -1,5 +1,6 @@
 #!/bin/bash
 #This script is used to get mongodb cluster status
+source /etc/profile
 STAT=$1
 LIBRARY=$2
 output=`/bin/echo "db.stats().$1" |/usr/local/mongodb-3.0.6/bin/mongo 127.0.0.1:20000/$2 --quiet`
