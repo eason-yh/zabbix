@@ -1,0 +1,14 @@
+#!/bin/bash
+USER_CONNET=`echo "show global variables like 'max_user_connections';"|mysql --defaults-file=/usr/local/zabbix/scripts/.my.cnf -P$1 -N|awk '{print $2}'`
+NOW_USER_CONNET=`mysqladmin ext -P $1|grep "Threads_connected"|awk '{print $4}'`
+#echo "$USER_CONNET"
+#echo "$NOW_USER_CONNET"
+#CONNET=`/bin/awk 'BEGIN {print "'$NOW_USER_CONNET'"/"'$USER_CONNET'"*100}'`
+#bc
+CONNET=`echo "scale=2;$NOW_USER_CONNET/$USER_CONNET*100"|bc`
+
+if [ `expr $CONNET \> 80` -eq 0 ];then
+  echo "Mysql Connection is OK,Mysql Connection is $NOW_USER_CONNET"
+ else
+  echo "Mysql Connection is CRITICAL,Mysql Connection is $NOW_USER_CONNET"
+fi
