@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+#coding=utf-8  
+__author__ = 'yuan.ran@msxf.com'  
+'''''This scripte use to monitor online redis cluster status and nodes status! need python 2.6 '''  
+import sys  
+import socket  
+import redis  
+  
+# define cluster nodes address  
+cluster_nodes =[ {"10.44.25.166" :"6379"},{"10.171.63.68" :"6379"},{"10.44.43.179":"6379"},  
+{"10.44.25.166":"7379"},{"10.171.63.68":"7379"},{"10.44.43.179":"7379"}]  
+  
+# init rhost and port  
+rhost = '10.44.25.166'  
+port = '6379'  
+  
+# check alive node  
+for address in cluster_nodes:  
+      sc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)  
+      ip =  ''.join(address.keys())  
+      port =int( ''.join(address.values()))  
+      sc.settimeout(1)  
+      try:  
+          sc.connect((ip,port))  
+          rhost,rport = ip,port  
+          break  
+      except Exception:  
+          print ("Server port  not connect!")  
+      sc.close()  
+  
+# create connect to alive redis node  
+try:  
+    rc = redis.StrictRedis(host=rhost,port=rport)  
+except Exception, err:  
+    print err  
+    print 'failed to connect redis cluster!'  
+    sys.exit(0)  
+  
+# get cluster status ok return 0,false return 1  
+def getClusterStatus():  
+    cs =  rc.execute_command('cluster','info')  
+    clusterstatus = cs.split('\r')[0].split(':')  
+    if clusterstatus[1] == 'ok':  
+        rediscluster = 0  
+    else:  
+        rediscluster = 1  
+    print rediscluster  
+  
+# get cluster alive node number  
+def getClusterNode():  
+    cn = rc.execute_command('cluster','nodes')  
+    nodescount1 = cn.count("connected")  
+    nodescount2 = cn.count("disconnected")  
+    nodescount = nodescount1 - nodescount2  
+    print nodescount  
+  
+if __name__ == '__main__':  
+    if  str(sys.argv[1]) == 'nodes':  
+        getClusterNode()  
+    elif  str(sys.argv[1]) == 'status':  
+        getClusterStatus()  
