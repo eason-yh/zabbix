@@ -1,0 +1,19 @@
+#!/usr/bin/python
+import os
+import json
+#import subprocess
+def discovery():
+   PORT=[]
+   list_port=[80,443]
+#   range_port=range(27017,27118)
+#   mongo_port=range_port+list_port
+
+   port = os.popen("ss -tln|awk 'NR>1 {print $4}'")
+   for i in port:
+#      if i.split(':')[0]=='*':
+        tmp=i.split(':')[-1].strip('\n')
+        if int(tmp) in list_port:
+          PORT+=[{"{#PORT}":tmp}]
+   print json.dumps({'data':PORT},sort_keys=True,indent=4)
+if __name__=='__main__':
+   discovery()
