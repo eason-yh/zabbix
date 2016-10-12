@@ -1,4 +1,5 @@
 #!/bin/bash
+source /etc/profile
 USER_CONNET=`echo "show global variables like 'max_user_connections';"|mysql --defaults-file=/usr/local/zabbix/scripts/.my.cnf -P$1 -N|awk '{print $2}'`
 NOW_USER_CONNET=`mysqladmin ext -P $1|grep "Threads_connected"|awk '{print $4}'`
 #echo "$USER_CONNET"
