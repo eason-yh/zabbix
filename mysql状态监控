@@ -1,0 +1,2 @@
+#!/bin/bash
+mysqladmin ext -P $1|grep "$2"|awk 'NR==1{print $4}'
