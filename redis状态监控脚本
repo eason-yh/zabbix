@@ -1,4 +1,5 @@
 #!/bin/bash
+source /etc/profile
 PORT=$1
 STATUS=$2
 IP=`ifconfig eth0|awk -F "[ :]+" 'NR==2 {print $4}'`
