@@ -1,0 +1,161 @@
+#!/bin/bash
+#set -x
+IPGET="$3"
+PORT=22
+SHFILE="$2"
+ACTION="$1"
+DPATH="$4"
+SSHCMD="ssh $IPGET -p $PORT -l root"
+
+
+#scp shfile.Example: control.sh scpsh abc.sh 10.100.1.20 /root
+
+scpsh() {
+
+if [ -s $IPGET ];then
+	for i in $(cat $IPGET);do
+	scp -r -P $PORT $SHFILE root@$i:$DPATH
+	echo "$SHFILE scp $i over."
+	done
+else
+	scp -r -P $PORT $SHFILE root@$IPGET:$DPATH
+	echo "$SHFILE scp $DPATH over."
+fi
+		}
+
+#run shfile Example: control.sh scpsh abc.sh 10.100.1.20
+
+runsh() {
+	$SSHCMD "sh $SHFILE"
+	}
+
+
+#install app Example: control.sh install fuse-2.9.4 10.100.1.20 OR control.sh install fuse-2.9.4 iplist.txt
+
+install() {
+
+if [ -s $IPGET ];then
+	for i in $(cat $IPGET);do
+	SSHCMD="ssh $i -p $PORT -l root"
+	$SSHCMD "tar xzf "$SHFILE".tar.gz"
+        read -p "Enter configure value:" value
+ 	echo "$value"
+       	$SSHCMD "cd $SHFILE ; ./$value && make"
+	done
+else
+	$SSHCMD "tar xzf "$SHFILE".tar.gz"
+	read -p "Enter configure value:" value
+	echo "$value"
+	$SSHCMD "cd $SHFILE ; ./$value && make"
+fi
+	}
+
+
+# change hostname
+chhostname() {
+if [ -s $IPGET ];then
+	for i in $(cat $IPGET);do
+		hostname=`awk '{if($2=="'$i'"){print $1}}' server.list`
+		SSHCMD="ssh $i -p $PORT -l root"
+		$SSHCMD "echo $hostname"
+		$SSHCMD "hostname $hostname"
+		$SSHCMD "sed -i '2d' /etc/sysconfig/network"
+		$SSHCMD "echo "HOSTNAME=$hostname">>/etc/sysconfig/network"
+		$SSHCMD "echo "127.0.0.1 $hostname">>/etc/hosts"
+        done
+fi
+}
+
+newname() {
+       	read -p "Enter a hostname:" value
+       	echo "new hostname $value"
+       	$SSHCMD "hostname $value"
+	$SSHCMD "sed -i '2d' /etc/sysconfig/network"
+	$SSHCMD "echo HOSTNAME=$value >>/etc/sysconfig/network"
+	}
+
+
+# command on any host
+
+cmd() {
+
+if [ -s $IPGET ];then
+        read -p "Enter Execute the command:" value
+        for i in $(cat $IPGET);do
+        echo "##########################################################################################################"
+        echo -e "#################################    \033[32m **$i** \033[0m    ####################################################"
+        echo "##########################################################################################################"
+        SSHCMD="ssh $i -p $PORT -l root"
+        echo "$value"
+        $SSHCMD "$value"
+        if [ $? -ne 0 ];then
+            echo -e "\033[31m ******Error!!!$i***** \033[0m"
+        fi
+        done
+else
+        read -p "Enter Execute the command:" value
+        echo "$value"
+        $SSHCMD "$value"
+fi
+        }
+
+
+#help instructions 
+
+help() {
+	echo "Usage: control.sh [ OPTIONS ] [OBJECT] [IP] { PATH }"
+	echo "OPTIONS:{ scpsh | runsh | install | newname | cmd }
+	scpsh: scp file or script (like as: abc.sh abc.tar.gz)
+	runsh: An absolute path
+	install: Standard compiler installed.
+	newname: change hostname
+	cmd: Execute the command."
+	echo "OBJECT: script file or abc-0.1.2.tar.gz { abc-0.1.2 is Unpack the dir name }
+	[ newname | cmd ] OBJECT = 0" 
+	echo "IP: ip or ip file"
+	echo "PATH: [ scpsh ] use"
+	echo "Example: 
+	control.sh scpsh abc.sh 10.100.1.20 /root
+	control.sh runsh /root/abc.sh 10.100.1.20 
+	control.sh install fuse-2.9.4 10.100.1.20 
+	control.sh newname 0 10.100.1.20
+	control.sh cmd 0 10.100.1.20 
+	OR
+	control.sh scpsh abc.sh iplist.txt /root
+	control.sh runsh /root/abc.sh iplist.txt
+	control.sh install fuse-2.9.4 iplist.txt
+	control.sh newname 0 iplist.txt
+	control.sh cmd 0 iplist.txt"
+	}
+
+		
+case "$ACTION" in
+	scpsh)
+		scpsh
+		RETVAL=$?
+		;;
+	runsh)
+		runsh
+		RETVAL=$?
+		;;
+	install)
+		install
+		RETVAL=$?
+		;;		
+	chhostname)
+		chhostname
+		RETVAL=$?
+		;;
+	cmd)
+		cmd
+		RETVAL=$?
+		;;
+	help)
+		help
+		RETVAL=$?
+		;;
+
+esac
+
+exit $RETVAL
+#set +x
